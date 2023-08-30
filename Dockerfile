@@ -1,4 +1,4 @@
-FROM emscripten/emsdk:3.1.35 as build_tool
+FROM emscripten/emsdk:3.1.45 as build_tool
 
 RUN apt-get update && \
   apt-get --no-install-recommends -y install \
@@ -37,18 +37,19 @@ RUN wget https://sqlite.org/2020/sqlite-amalgamation-3330000.zip \
         && rm sqlite-amalgamation-3330000.zip \
         && mv sqlite-amalgamation-3330000 sqlite
 WORKDIR /src/sqlite
+ENV EMCC_CFLAGS "-pthread -sSHARED_MEMORY"
 RUN emcc -Oz -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DISABLE_LFS -DSQLITE_ENABLE_FTS3 -DSQLITE_ENABLE_FTS3_PARENTHESIS -DSQLITE_THREADSAFE=0 -DSQLITE_ENABLE_NORMALIZE -c sqlite3.c -o sqlite3.o
 
 FROM build_tool as php_src
-ARG PHP_BRANCH=PHP-8.2.5
-RUN git clone https://github.com/php/php-src.git php-src \
+ARG PHP_BRANCH=PHP-8.2.9
+RUN echo 'f' && git clone https://github.com/soyuka/php-src.git php-src \
 		--branch $PHP_BRANCH \
 		--single-branch \
 		--depth 1
 
 FROM php_src AS php-wasm
-ARG WASM_ENVIRONMENT=web
-ARG ASSERTIONS=0
+ARG WASM_ENVIRONMENT=web,worker
+ARG ASSERTIONS=1
 ARG OPTIMIZE=-O2
 # ARG PRE_JS=
 ARG INITIAL_MEMORY=256mb
@@ -59,6 +60,7 @@ ENV LIBXML_LIBS "-L/src/usr/lib"
 ENV LIBXML_CFLAGS "-I/src/usr/include/libxml2"
 ENV SQLITE_CFLAGS "-I/src/usr/include/sqlite3"
 ENV SQLITE_LIBS "-L/src/usr/lib"
+ENV EMCC_CFLAGS "-pthread -sSHARED_MEMORY"
 WORKDIR /src/php-src
 RUN ./buildconf --force \
     && emconfigure ./configure \
@@ -85,8 +87,10 @@ RUN ./buildconf --force \
 		--enable-mbstring  \
 		--disable-mbregex  \
 		--enable-tokenizer \
-		--enable-simplexml   \
+		--enable-simplexml \
 		--enable-pdo       \
+		--enable-opcache   \
+		--disable-opcache-jit \
 		--with-pdo-sqlite  \
 		--with-sqlite3
 RUN emmake make -j8
@@ -103,13 +107,14 @@ RUN emcc $OPTIMIZE \
 		-o /src/pib_eval.o \
 		-s ERROR_ON_UNDEFINED_SYMBOLS=0
 RUN mkdir /build && emcc $OPTIMIZE \
-	-o /build/php-$WASM_ENVIRONMENT.mjs \
+	-o /build/php.mjs \
 	--llvm-lto 2                     \
-	-s EXPORTED_FUNCTIONS='["_phpw", "_phpw_flush", "_phpw_exec", "_phpw_run", "_php_embed_init", "_php_embed_shutdown", "_zend_eval_string"]' \
-	-s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "UTF8ToString", "lengthBytesUTF8", "FS"]' \
+	-s EXPORTED_FUNCTIONS='["_phpw", "_phpw_flush", "_phpw_exec", "_phpw_run", "_chdir", "_setenv", "_php_embed_init", "_php_embed_shutdown", "_zend_eval_string"]' \
+	-s EXPORTED_RUNTIME_METHODS='["ccall", "UTF8ToString", "lengthBytesUTF8", "FS"]' \
 	-s ENVIRONMENT=$WASM_ENVIRONMENT    \
 	-s FORCE_FILESYSTEM=1            \
 	-s MAXIMUM_MEMORY=2gb             \
+	-s SHARED_MEMORY=1             \
 	-s INITIAL_MEMORY=$INITIAL_MEMORY \
 	-s ALLOW_MEMORY_GROWTH=1         \
 	-s ASSERTIONS=$ASSERTIONS      \
