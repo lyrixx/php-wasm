@@ -12,11 +12,10 @@ int main() {
 
 void phpw_flush()
 {
-  // output buffers are disabled by default so we don't need to flush
-  // fflush(stdout);
   fprintf(stdout, "\n");
-  // fflush(stderr);
+  fflush(stdout);
   fprintf(stderr, "\n");
+  fflush(stderr);
 }
 
 char *EMSCRIPTEN_KEEPALIVE phpw_exec(char *code)
