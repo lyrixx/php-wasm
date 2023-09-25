@@ -1,3 +1,4 @@
 dist/
-public/
-!public/index.html
+public/php-web.mjs
+public/php-web.data
+public/php-web.wasm

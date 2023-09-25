@@ -13,13 +13,13 @@ int main() {
 void phpw_flush()
 {
   fprintf(stdout, "\n");
-  fflush(stdout);
   fprintf(stderr, "\n");
-  fflush(stderr);
 }
 
 char *EMSCRIPTEN_KEEPALIVE phpw_exec(char *code)
 {
+  // This sets USE_ZEND_ALLOC=0 to avoid nunmap errors
+  setenv("USE_ZEND_ALLOC", "0", 1);
   php_embed_init(0, NULL);
   char *retVal = NULL;
 
@@ -43,6 +43,7 @@ char *EMSCRIPTEN_KEEPALIVE phpw_exec(char *code)
 
 void EMSCRIPTEN_KEEPALIVE phpw_run(char *code)
 {
+  setenv("USE_ZEND_ALLOC", "0", 1);
   php_embed_init(0, NULL);
   zend_try
   {
@@ -63,6 +64,7 @@ int EMBED_SHUTDOWN = 1;
 
 void phpw(char *file)
 {
+  setenv("USE_ZEND_ALLOC", "0", 1);
   if (EMBED_SHUTDOWN == 0) {
 	  php_embed_shutdown();
   }
