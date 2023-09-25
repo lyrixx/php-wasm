@@ -1,0 +1,24 @@
+<iframe id="output"></iframe>
+<script type="module">
+	import Module from "./php-web.mjs";
+	const STR = "string";
+	const output = document.getElementById('output');
+	const buffer = ''
+
+	Module({
+		print(data) {
+			buffer += data;
+			// output.setAttribute('srcdoc', data);
+		},
+		printErr(data) {
+			if (data) {
+				console.log("stderr: ", data);
+			}
+		},
+	}).then(({ ccall, FS, IDBFS }) => {
+		console.log(ccall("phpw_exec", STR, [STR], ["phpversion();"]));
+
+		// Note that `/src` is the path we used when preloading!
+		// ccall("phpw", null, [STR], ["/src/index.php"]);
+	});
+</script>

@@ -106,7 +106,7 @@ phpw(string filePath): void
 ```javascript
 const STR = 'string';
 ccall("phpw", null, [STR], ["public/index.php"]);
-console.log(ccall("phpw_exec", STR, [STR], ["phpversion();"]);
+console.log(ccall("phpw_exec", STR, [STR], ["phpversion();"]));
 ```
 
 [More about how to call exposed functions](https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html?highlight=call#interacting-with-code-ccall-cwrap)
