@@ -50,6 +50,7 @@ FROM php_src AS php-wasm
 ARG WASM_ENVIRONMENT=web
 ARG ASSERTIONS=0
 ARG OPTIMIZE=-O2
+# TODO: find a way to keep this, it can't be empty if defined...
 # ARG PRE_JS=
 ARG INITIAL_MEMORY=256mb
 COPY --from=libxml /src/libxml2/build/ /src/usr
